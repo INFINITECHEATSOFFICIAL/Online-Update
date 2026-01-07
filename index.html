@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Update Check</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .popup {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .header h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 15px;
+        }
+        
+        .content {
+            padding: 25px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-update {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .status-ok {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .btn-close {
+            background: #e0e0e0;
+            color: #666;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .icon {
+            font-size: 18px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: #888;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+            background: #f9f9f9;
+        }
+        
+        .telegram-btn {
+            background: #0088cc;
+            color: white;
+        }
+        
+        .telegram-btn:hover {
+            background: #0077b5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hidden overlay for popup -->
+    <div class="overlay" id="popupOverlay">
+        <div class="popup">
+            <div class="header">
+                <h2>🔄 Update Required</h2>
+                <p>New version available for download</p>
+            </div>
+            
+            <div class="content">
+                <div class="info-item">
+                    <span class="info-label">Current Version:</span>
+                    <span class="info-value" id="currentVersion">1.0.0</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Latest Version:</span>
+                    <span class="info-value" id="latestVersion">-</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="status-badge status-update" id="statusBadge">Update Required</span>
+                </div>
+                
+                <div class="info-item">
+                    <span class="info-label">Expiry Date:</span>
+                    <span class="info-value" id="expiryDate">-</span>
+                </div>
+                
+                <div class="buttons">
+                    <a href="#" class="btn btn-primary" id="updateBtn">
+                        <span class="icon">⬇️</span> Update Now
+                    </a>
+                    <a href="#" class="btn telegram-btn hidden" id="telegramBtn">
+                        <span class="icon">📱</span> Telegram
+                    </a>
+                    <button class="btn btn-close" id="closeBtn">
+                        <span class="icon">✖️</span> Close
+                    </button>
+                </div>
+            </div>
+            
+            <div class="footer">
+                All updates are delivered through official channels
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG_URL = 'config.json';
+        const APP_VERSION = '1.0.0'; // Hardcoded in WebView via JavaScript Interface
+        
+        // DOM Elements
+        const popupOverlay = document.getElementById('popupOverlay');
+        const currentVersionEl = document.getElementById('currentVersion');
+        const latestVersionEl = document.getElementById('latestVersion');
+        const statusBadge = document.getElementById('statusBadge');
+        const expiryDateEl = document.getElementById('expiryDate');
+        const updateBtn = document.getElementById('updateBtn');
+        const telegramBtn = document.getElementById('telegramBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        
+        // State
+        let configData = null;
+        let showPopup = false;
+        
+        // Version comparison function
+        function compareVersions(v1, v2) {
+            const parts1 = v1.split('.').map(Number);
+            const parts2 = v2.split('.').map(Number);
+            
+            for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+                const part1 = parts1[i] || 0;
+                const part2 = parts2[i] || 0;
+                if (part1 > part2) return 1;
+                if (part1 < part2) return -1;
+            }
+            return 0;
+        }
+        
+        // Date comparison function
+        function compareDates(dateStr1, dateStr2) {
+            const date1 = new Date(dateStr1);
+            const date2 = new Date(dateStr2);
+            return date1 > date2;
+        }
+        
+        // Get current date in yyyy-MM-dd format
+        function getCurrentDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // Show popup with config
+        function showUpdatePopup() {
+            if (!configData) return;
+            
+            // Update UI elements
+            currentVersionEl.textContent = APP_VERSION;
+            latestVersionEl.textContent = configData.latestVersion;
+            expiryDateEl.textContent = configData.expireDate;
+            
+            // Check if update is required
+            const versionCompare = compareVersions(APP_VERSION, configData.latestVersion);
+            const dateCompare = compareDates(getCurrentDate(), configData.expireDate);
+            
+            if (versionCompare < 0 || dateCompare || configData.forceUpdate) {
+                // Update required
+                statusBadge.textContent = 'Update Required';
+                statusBadge.className = 'status-badge status-update';
+                showPopup = true;
+                
+                // Set update button URL
+                updateBtn.href = configData.updateUrl;
+                
+                // Show/hide Telegram button
+                if (configData.updateUrl.includes('t.me') || configData.updateUrl.includes('telegram')) {
+                    telegramBtn.href = configData.updateUrl;
+                    telegramBtn.classList.remove('hidden');
+                } else {
+                    telegramBtn.classList.add('hidden');
+                }
+                
+                // Show/hide close button based on forceUpdate
+                if (configData.forceUpdate) {
+                    closeBtn.classList.add('hidden');
+                } else {
+                    closeBtn.classList.remove('hidden');
+                }
+            } else {
+                // No update required
+                statusBadge.textContent = 'Up to Date';
+                statusBadge.className = 'status-badge status-ok';
+                showPopup = false;
+                
+                // Hide popup if no update needed
+                popupOverlay.style.display = 'none';
+                return;
+            }
+            
+            // Show the popup
+            popupOverlay.style.display = 'flex';
+        }
+        
+        // Fetch config and initialize
+        async function initialize() {
+            try {
+                const response = await fetch(CONFIG_URL, {
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                configData = await response.json();
+                
+                // Validate config structure
+                if (!configData.latestVersion || !configData.expireDate || !configData.updateUrl) {
+                    throw new Error('Invalid config structure');
+                }
+                
+                // Show popup based on config
+                showUpdatePopup();
+                
+                // Log for debugging (remove in production)
+                console.log('Config loaded:', configData);
+                console.log('App version:', APP_VERSION);
+                console.log('Current date:', getCurrentDate());
+                
+            } catch (error) {
+                console.error('Failed to load config:', error);
+                
+                // Don't show popup on network errors
+                popupOverlay.style.display = 'none';
+            }
+        }
+        
+        // Event Listeners
+        updateBtn.addEventListener('click', function(e) {
+            if (!configData) {
+                e.preventDefault();
+                return;
+            }
+            // Allow default link behavior (redirect to updateUrl)
+        });
+        
+        telegramBtn.addEventListener('click', function(e) {
+            if (!configData) {
+                e.preventDefault();
+                return;
+            }
+            // Allow default link behavior
+        });
+        
+        closeBtn.addEventListener('click', function() {
+            popupOverlay.style.display = 'none';
+        });
+        
+        // Close on overlay click (outside popup)
+        popupOverlay.addEventListener('click', function(e) {
+            if (e.target === popupOverlay && !configData?.forceUpdate) {
+                popupOverlay.style.display = 'none';
+            }
+        });
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initialize);
+        
+        // Android WebView Interface (example)
+        if (window.AndroidInterface) {
+            // If you have a JavaScript interface in WebView
+            // window.AndroidInterface.getAppVersion() could provide dynamic version
+        }
+    </script>
+</body>
+</html>
